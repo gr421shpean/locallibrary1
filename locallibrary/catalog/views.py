@@ -1,6 +1,12 @@
 from django.shortcuts import render
 from django.views import generic
 from .models import Book, Author, BookInstance, Genre
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+
+class MyView(LoginRequiredMixin):
+    login_url = '/login/'
+    redirect_field_name = 'redirect_to'
 
 def index(request):
     """View function for home page of site."""
@@ -17,6 +23,7 @@ def index(request):
     num_visits = request.session.get('num_visits', 0)
     request.session['num_visits'] = num_visits + 1
 
+
     context = {
         'num_books': num_books,
         'num_instances': num_instances,
@@ -32,3 +39,14 @@ class BookListView(generic.ListView):
 
 class BookDetailView(generic.DetailView):
     model = Book
+
+
+class LoanedBooksByUserListView(LoginRequiredMixin,generic.ListView):
+
+    model = BookInstance
+    template_name ='catalog/bookinstance_list_borrowed_user.html'
+    paginate_by = 1
+
+    def get_queryset(self):
+        return (BookInstance.objects.filter(borrower=self.request.user).filter(status__exact='o').order_by('due_back'))
+
